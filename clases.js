@@ -135,12 +135,13 @@ class Anime {
 
     /** Serializa el anime a un objeto plano para localStorage */
     toJSON() {
-        //...
+        return JSON.stringify(this);
     }
 
     /** Crea un Anime desde datos guardados en localStorage */
     fromJSON(data) {
-        //...
+       const dataFromJSON = JSON.parse(data);
+       return dataFromJSON;  
     }
 
     /* Añadir las funciones que consideréis necesarias*/
@@ -272,11 +273,30 @@ class User {
     #email;
     #username;
     #password;
-    #watching;     // AnimeList — máx. 10
-    #planToWatch;  // AnimeList — sin límite
+    #watching = [];     // AnimeList — máx. 10
+    #planToWatch; = []; // AnimeList — sin límite
 
     /*Constructor de la clase User */
+   constructor({name, surname, address, city, postalCode, email, username, password}) {
+      this.#name = name;
+      this.#surname = surname;
+      this.#address = address;
+      this.#city = city;
+      this.#postalCode = postalCode;
+      this.#email = email;
+      this.#username = username;
+      this.#password = password;
+   }
 
+   get name() {return this.#name;}
+   set name(newName) {
+      if (typeof newName !== 'string' || newName.trim() === '') {
+         throw new Error("El nombre no puede estar vacío y debe ser una cadena de texto.")
+      }
+        this.#name = newName.trim();
+    }
+
+   get surname() {return this.#surname}
     /* --- Getters --- */
     
     /* --- Setters --- */
