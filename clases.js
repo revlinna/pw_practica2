@@ -296,8 +296,8 @@ class User {
     #email;
     #username;
     #password;
-    #watching;     // AnimeList — máx. 10
-    #planToWatch;  // AnimeList — sin límite
+    #watching = [];     // AnimeList — máx. 10
+    #planToWatch = [];  // AnimeList — sin límite
 
     /*Constructor de la clase User */
   constructor({name, surname, address, city, postalCode, email, username, password}) {
