@@ -40,7 +40,7 @@ class Anime {
         this.rank = rank;
     }
     
-    get id() {return this.#mal_id;}
+  get id() {return this.#mal_id;}
 
     get title() {return this._title;}
     set title(newTitle) {
@@ -134,14 +134,32 @@ class Anime {
 
 
     /** Serializa el anime a un objeto plano para localStorage */
-    toJSON() {
-        return JSON.stringify(this);
+   toJSON() {
+        return {
+          mal_id: this.id,
+          //con el operador OR se asigna un valor de sustitución en caso de ausencia de valor de la propiedad.
+          //con este valor de sustitución la propiedad sin valor no será borrada del texto por JSON.stringify(). 
+          title: this.title || "Sin título.", 
+          titleJapanese: this.titleJapanese || "Sin título en japonés.",
+          synopsis: this.synopsis || "Sin sinópsis.",
+          image_url: this.image_url || "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/960px-Placeholder_view_vector.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail",
+          episodes: this.episodes || 0,
+          type: this.type || "Sin tipo.",
+          status: this.status || "Sin estado.",
+          score: this.score || 0,
+          genres: this.genres || [],
+          studios: this.studios || [],
+          aired: this.aired || 0,
+          popularity: this.popularity || 0,
+          rank: this.rank || 0
+        } //créditos a Adam Coster por la estructura de toJSON https://adamcoster.com/blog/how-to-stringify-class-instances-in-javascript-and-express-js .
+        //créditos a Christian C. Salvadó por el modo de uso de operador OR https://stackoverflow.com/a/3088161 .
     }
 
     /** Crea un Anime desde datos guardados en localStorage */
     fromJSON(data) {
        const dataFromJSON = JSON.parse(data);
-       return dataFromJSON;  
+       return new Anime(dataFromJSON);  
     }
 
     /* Añadir las funciones que consideréis necesarias*/
@@ -249,11 +267,16 @@ class AnimeList {
    };  
     /** Serializa la lista para localStorage */
     toJSON() {
-        //...
+        return {
+          list: this.#list,
+          name: this.#name,
+          maxItems: this.#maxItems
+        }
     }
 
     fromJSON(data) {
-        //...
+      const dataFromJSON = JSON.parse(data);
+       return new AnimeList(dataFromJSON);
     }
 
     /* Añadir las funciones que consideréis necesarias*/
@@ -273,31 +296,43 @@ class User {
     #email;
     #username;
     #password;
-    #watching = [];     // AnimeList — máx. 10
-    #planToWatch; = []; // AnimeList — sin límite
+    #watching;     // AnimeList — máx. 10
+    #planToWatch;  // AnimeList — sin límite
 
     /*Constructor de la clase User */
-   constructor({name, surname, address, city, postalCode, email, username, password}) {
-      this.#name = name;
-      this.#surname = surname;
-      this.#address = address;
-      this.#city = city;
-      this.#postalCode = postalCode;
-      this.#email = email;
-      this.#username = username;
-      this.#password = password;
-   }
+  constructor({name, surname, address, city, postalCode, email, username, password}) {
+    this.#name = name;
+    this.#surname = surname;
+    this.#address = address;
+    this.#city = city;
+    this.#postalCode = postalCode;
+    this.#email = email;
+    this.#username = username;
+    this.#password = password;
+  }
 
-   get name() {return this.#name;}
-   set name(newName) {
-      if (typeof newName !== 'string' || newName.trim() === '') {
-         throw new Error("El nombre no puede estar vacío y debe ser una cadena de texto.")
-      }
-        this.#name = newName.trim();
+  get name() {return this.#name;}
+  set name(newName) {
+    if (typeof newName !== 'string' || newName.trim() === '') {
+      throw new Error("El nombre no puede estar vacío y debe ser una cadena de texto.")
     }
+    this.#name = newName.trim();
+  }
 
-   get surname() {return this.#surname}
-    /* --- Getters --- */
+  get surname() {return this.#surname;}
+
+  get address() {return this.#address;}
+
+  get city() {return this.#city;}
+
+  get postalCode() {return this.#postalCode;}
+
+  get email() {return this.#email;}
+
+  get username() {return this.#username;}
+
+  get password() {return this.#password;}
+
     
     /* --- Setters --- */
 
