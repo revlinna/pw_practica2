@@ -53,18 +53,20 @@ class Anime {
     get titleJapanese() {return this._titleJapanese;}
     set titleJapanese(newTitleJapanese) {
         if (typeof newTitleJapanese !== 'string' || newTitleJapanese.trim() === '') {
-            throw new Error("El título en japonés no puede estar vacío y debe ser una cadena de texto.")
-        }
+            console.warn("El título en japonés no debe estar vacío y debe ser una cadena de texto.")
+        } else {
         this._titleJapanese = newTitleJapanese.trim();
     }
+   }
 
     get synopsis() {return this._synopsis}
     set synopsis(newSynopsis) {
         if (typeof newSynopsis !== 'string' || newSynopsis.trim() === '') {
-            throw new Error("El sínopsis no puede estar vacío y debe ser una cadena de texto.")
-        }
+            console.warn("El sínopsis no debe estar vacío y debe ser una cadena de texto.")
+        } else {
         this._synopsis = newSynopsis.trim();
-    } 
+        }
+    }
   
     get image_url() {return this._image_url;}
     set image_url(newUrl) {
@@ -124,9 +126,10 @@ class Anime {
     get popularity() {return this._popularity;}
     set popularity(newPop) {
         if (typeof newPop !== "number" || newPop < 0){
-            throw new Error("La popularidad debe ser un número mayor que 0.")
-        }
+            console.warn("La popularidad debe ser un número mayor que 0.")
+        } else {
         this._popularity = newPop;
+        }
     }
 
     get rank() {return this._rank;}
@@ -320,14 +323,27 @@ class User {
   }
 
   get surname() {return this.#surname;}
+  set surname(newSurname) {
+    if (typeof newSurname !== 'string' || newSurname.trim() === '') {
+      throw new Error("El apellido no puede estar vacío y debe ser una cadena de texto.")
+      }
+    this.#surname = newSurname.trim();
+  }
 
   get address() {return this.#address;}
+  set address(newAddress) {
+    if (typeof newAddress !== 'string' || newAddress.trim() === '') {
+      throw new Error("La dirección de domicilio no puede estar vacía y debe ser una cadena de texto.")
+      }
+    this.#address = newAddress.trim();
+  }
 
   get city() {return this.#city;}
 
   get postalCode() {return this.#postalCode;}
 
   get email() {return this.#email;}
+   ///try https://mailtrap.io/blog/javascript-email-validation/
 
   get username() {return this.#username;}
 
