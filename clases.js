@@ -160,7 +160,7 @@ class Anime {
     }
 
     /** Crea un Anime desde datos guardados en localStorage */
-    fromJSON(data) {
+    static fromJSON(data) {
        const dataFromJSON = JSON.parse(data);
        return new Anime(dataFromJSON);  
     }
@@ -177,7 +177,7 @@ class AnimeList {
   #list;
   #name;
   #maxItems;
-    constructor(name, maxItems){
+    constructor({name, maxItems}){ //entre las llaves para poder pasar un objeto entero al fromJSON y no arguementos sueltos
       this.#list = [];
       this.#name = name;
       this.#maxItems = maxItems;
@@ -277,7 +277,7 @@ class AnimeList {
         }
     }
 
-    fromJSON(data) {
+    static fromJSON(data) {
       const dataFromJSON = JSON.parse(data);
        return new AnimeList(dataFromJSON);
     }
@@ -304,14 +304,14 @@ class User {
 
     /*Constructor de la clase User */
   constructor({name, surname, address, city, postalCode, email, username, password}) {
-    this.#name = name;
-    this.#surname = surname;
-    this.#address = address;
-    this.#city = city;
-    this.#postalCode = postalCode;
-    this.#email = email;
-    this.#username = username;
-    this.#password = password;
+    this.name = name;
+    this.surname = surname;
+    this.address = address;
+    this.city = city;
+    this.postalCode = postalCode;
+    this.email = email;
+    this.username = username;
+    this.password = password;
   }
 
   get name() {return this.#name;}
@@ -339,41 +339,87 @@ class User {
   }
 
   get city() {return this.#city;}
+  set city(newCity) {
+    if (typeof newCity !== 'string') {
+      throw new Error("La población no puede estar vacía y debe ser una cadena de texto.")
+    }
+    this.#city = newCity.trim();
+  }
 
   get postalCode() {return this.#postalCode;}
+  set postalCode(newCode) {
+    if (typeof newCode !== 'string') {
+      throw new Error("El código postal no puede estar vacío y debe ser una cadena de texto.")
+    }
+    this.#postalCode = newCode;
+  }
 
   get email() {return this.#email;}
-   ///try https://mailtrap.io/blog/javascript-email-validation/
+  set email(newEmail) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (typeof newEmail !== 'string' || newEmail.trim() === '' || !emailRegex.test(newEmail)){
+      throw new Error("El correo electrónico debe ser una cadena de texto en formato 'correo@dominio.com")
+    }
+    this.#email = newEmail.trim();
+  } //créditos por el método de validación a Yevhenii Odyntsov https://mailtrap.io/blog/javascript-email-validation/
 
   get username() {return this.#username;}
+  set username(newUsername) {
+    if (typeof newUsername !== 'string' || newUsername.trim() === '') {
+      throw new Error("El nombre de usuario no puede estar vacío y debe ser una cadena de texto.")
+    }
+    this.#username = newUsername.trim();
+  }
 
   get password() {return this.#password;}
+  set password(newPassword) {
+    const passwordRegex = /^(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
 
-    
-    /* --- Setters --- */
+    if (typeof newPassword !== 'string' || newPassword.trim() === '' || !passwordRegex.test(newPassword)){
+      throw new Error("La contraseña no puede estar vacía y debe cumplir el formato.")
+    }
+    this.#password = newPassword.trim();
+  } // créditos por regex a UI Bakery https://uibakery.io/regex-library/password 
 
-
-    //...
 
     /** Guarda el usuario en localStorage (nuevo usuario) */
-    save() {
-        //...
-    }
+  save() {
+    const storageObj = this.#toStorageObject();
+    const userAsJSON = JSON.stringify(storageObj);
+    localStorage.setItem(this.username, userAsJSON);
+  }
 
     /** Actualiza los datos del usuario en localStorage */
-    update() {
-        //...
-    }
+  update() {
+
+  }
 
     /** Objeto plano serializable para localStorage */
-    #toStorageObject() {
-        //...
-    }
+  #toStorageObject() {
+    return {
+      name: this.name,
+      surname: this.surname,
+      address: this.address,
+      city: this.city,
+      postalCode: this.postalCode,
+      email: this.email,
+      username: this.username,
+      password: this.password
+    };
+  }
 
     /** Carga un usuario desde localStorage dado su nombre de usuario */
-    loadFromStorage(username) {
-        //...
+  static loadFromStorage(username) {
+    const objFromStorage = localStorage.getItem(username);
+    if (!objFromStorage) {
+      return null;
+    } else {
+      const userFromJSON = JSON.parse(objFromStorage);
+      return new User(userFromJSON);
     }
+  }
 
     /* Añadir las funciones que consideréis necesarias*/
 }
+
+
