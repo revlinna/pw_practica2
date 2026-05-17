@@ -16,6 +16,7 @@ const inputUsername = document.getElementById("username");
 const inputPassword = document.getElementById("password");
 const inputPassword2 = document.getElementById("password2");
 const buttonSave = document.getElementById("saveButton");
+const buttonBack = document.getElementById("backToLoginButton");
 
 
 
@@ -108,8 +109,7 @@ function checkInputs() {
         user.save();
         window.alert("Usuario guardado con éxito.");
         console.log("Usuario guardado: " + localStorage.getItem(inputUsername.value.trim()));
-
-        //!!!!!!AÑADIR AQUI REDIRRECCIÓN ATRÁS AL LOGIN
+        window.location.href = "index.html";
 
     } catch (error) {
         if (error.message.includes("correo")){
@@ -122,3 +122,9 @@ function checkInputs() {
     }
 }
 buttonSave.addEventListener("click", checkInputs);
+
+// ----- volver a la página login -----
+function redirrectToIndex() {
+    window.location.href = "index.html";
+}
+buttonBack.addEventListener("click", redirrectToIndex);
