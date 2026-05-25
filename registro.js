@@ -1,104 +1,130 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AniTrack — Registro</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="../css/styles.css">
-</head>
-<body class="auth-page">
+/**
+ * registro.js — Lógica del formulario de registro con validaciones en JavaScript
+ * (sin validaciones HTML5 nativas)
+ */
 
-    <div class="auth-container auth-container--wide">
-        <div class="auth-header">
-            <div class="auth-logo">
-                <i class="fa-solid fa-user-plus"></i>
-            </div>
-            <h1>Crear cuenta</h1>
-            <p class="auth-subtitle">Únete a AniTrack</p>
-        </div>
+/* Añadir las funciones que consideréis necesarias*/
 
-        <form id="registerForm" class="auth-form" novalidate>
+// --- elementos recuperados del documento ---
+const inputName = document.getElementById("name");
+const inputSurname = document.getElementById("surname");
+const inputAddress = document.getElementById("address");
+const selectCity = document.getElementById("city");
+const inputCP = document.getElementById("postalCode");
+const inputEmail = document.getElementById("email");
+const inputUsername = document.getElementById("username");
+const inputPassword = document.getElementById("password");
+const inputPassword2 = document.getElementById("password2");
+const buttonSave = document.getElementById("saveButton");
+const buttonBack = document.getElementById("backToLoginButton");
 
-            <!-- Nombre -->
-            <div class="form-group">
-                <label for="name"><i class="fa-solid fa-id-card"></i> Nombre</label>
-                <input type="text" id="name" name="name" placeholder="Tu nombre">
-                <span class="field-error" id="nameError"></span>
-            </div>
 
-            <!-- Apellidos -->
-            <div class="form-group">
-                <label for="surname"><i class="fa-solid fa-id-card"></i> Apellidos</label>
-                <input type="text" id="surname" name="surname" placeholder="Tus apellidos">
-                <span class="field-error" id="surnameError"></span>
-            </div>
 
-            <!-- Dirección -->
-            <div class="form-group">
-                <label for="address"><i class="fa-solid fa-house"></i> Dirección</label>
-                <input type="text" id="address" name="address" placeholder="Calle, número, piso...">
-                <span class="field-error" id="addressError"></span>
-            </div>
+// ----- relleno de las opciones del desplegable -población- -----
+for (obj of cities) {
+    const cityOption = document.createElement("option")
+    cityOption.text = obj.name;
+    cityOption.value = obj.name;
+    selectCity.appendChild(cityOption)
+}
 
-            <!-- Población -->
-            <div class="form-group">
-                <label for="city"><i class="fa-solid fa-city"></i> Población</label>
-                <select id="city" name="city"></select>
-                <span class="field-error" id="cityError"></span>
-            </div>
+// ----- autocompleta el CP tras la selección de población -----
+function autoSelectCP(event) {
+    const targetCity = event.target.value
+    const cpByCity = cities.find(currentCity => currentCity.name === targetCity);
+    if (cpByCity) {
+        inputCP.value = cpByCity.postalCode; 
+    }
+}
+selectCity.addEventListener("change", autoSelectCP);
 
-            <!-- Código postal -->
-            <div class="form-group">
-                <label for="postalCode"><i class="fa-solid fa-envelope"></i> Código postal</label>
-                <input type="text" id="postalCode" name="postalCode" placeholder="Ej: 03001"
-                       maxlength="5">
-                <span class="field-error" id="postalCodeError"></span>
-            </div>
+// ----- autocompleta la población tras la selección de CP -----
+function autoCompleteCity(event) {
+    const targetCP = event.target.value;
+    if (targetCP.length === 5){
+        const cityByCP = cities.find(currentCity => currentCity.postalCode === targetCP);
+        if(cityByCP) {
+            selectCity.value = cityByCP.name;
+        }
+    }
+}
+inputCP.addEventListener("input", autoCompleteCity);
 
-            <!-- Email -->
-            <div class="form-group">
-                <label for="email"><i class="fa-solid fa-at"></i> Email</label>
-                <input type="text" id="email" name="email" placeholder="Escribe @ para autocompletar con @uoc.edu"
-                       autocomplete="email">
-                <span class="field-error" id="emailError"></span>
-            </div>
 
-            <!-- Usuario -->
-            <div class="form-group">
-                <label for="username"><i class="fa-solid fa-user"></i> Usuario</label>
-                <input type="text" id="username" name="username" placeholder="Nombre de usuario único">
-                <span class="field-error" id="usernameError"></span>
-            </div>
+// ---- autocompleta el email -----
+function autoCompleteEmail(event) {
+    const targetInput = event.target.value;
+    if (targetInput.includes("@")) {
+        document.getElementById("email").value = `${targetInput}uoc.edu`;        
+    }
+}
+inputEmail.addEventListener("input", autoCompleteEmail);
 
-            <!-- Contraseña -->
-            <div class="form-group">
-                <label for="password"><i class="fa-solid fa-lock"></i> Contraseña</label>
-                <input type="password" id="password" name="password"
-                       placeholder="Mín. 8 caracteres, letras, números y especiales">
-                <span class="field-error" id="passwordError"></span>
-            </div>
+// ----- comprueba la existencia de nombre de usuario -----
+function existentUsername(event) {
+    const usernameExists = localStorage.getItem(event.target.value.trim());
+    if (usernameExists) {
+       inputUsername.value = '';
+       inputUsername.placeholder = "Nombre ya existente. Pon nombre de usuario único."
+    }
+}
+inputUsername.addEventListener("blur", existentUsername);
 
-            <!-- Confirmación de contraseña -->
-            <div class="form-group">
-                <label for="password2"><i class="fa-solid fa-lock"></i> Repite la contraseña</label>
-                <input type="password" id="password2" name="password2" placeholder="Repite la contraseña">
-                <span class="field-error" id="password2Error"></span>
-            </div>
+// ----- comprueba la contraseña repetida -----
+function matchingPasswords(event) {
+    const targetPassword2 = event.target.value
+    if (targetPassword2 !== inputPassword.value) {
+        inputPassword2.value = '';
+        inputPassword2.placeholder = "Contraseñas no coinciden. Introdúce de nuevo.";
+    }
+}
+inputPassword2.addEventListener("blur", matchingPasswords);
 
-            <div class="auth-buttons">
-                <button type="button" id="saveButton" class="btn-primary">
-                    <i class="fa-solid fa-floppy-disk"></i> Guardar
-                </button>
-                <button type="button" id="backToLoginButton" class="btn-secondary">
-                    <i class="fa-solid fa-arrow-left"></i> Volver al login
-                </button>
-            </div>
-        </form>
-    </div>
+// ----- validación de campos rellenados y conservación -----
+function checkInputs() {
+    const fillableInputs = document.querySelectorAll("input");
+    let filled = true;
+    fillableInputs.forEach(currentInput => {
+        if (currentInput.value.trim() === '') {
+            filled = false;
+        }
+    });
 
-    <script src="../js/config.js"></script>
-    <script src="../js/clases.js"></script>
-    <script src="../js/registro.js"></script>
-</body>
-</html>
+    if (!filled) {
+        window.alert("Por favor, rellene todos los campos.");
+        return;
+    }
+    
+    try {
+        const user = new User({
+            name: inputName.value.trim(),
+            surname: inputSurname.value.trim(),
+            address: inputAddress.value.trim(),
+            city: selectCity.value,
+            postalCode: inputCP.value.trim(),
+            email: inputEmail.value.trim(),
+            username: inputUsername.value.trim(),
+            password: inputPassword.value 
+        })
+        user.save();
+        window.alert("Usuario guardado con éxito.");
+        console.log("Usuario guardado: " + localStorage.getItem(inputUsername.value.trim()));
+        window.location.href = "index.html";
+
+    } catch (error) {
+        if (error.message.includes("correo")){
+            window.alert("El correo electrónico debe seguir el formato 'correo@dominio.com'")
+        }
+        if (error.message.includes("contraseña")){
+            window.alert("La contraseña debe contener como mínimo 8 carácteres: letras, numeros y al menos un carácter especial #?!@$%^&*-.")
+        }
+        console.log(error.message);
+    }
+}
+buttonSave.addEventListener("click", checkInputs);
+
+// ----- volver a la página login -----
+function redirrectToIndex() {
+    window.location.href = "index.html";
+}
+buttonBack.addEventListener("click", redirrectToIndex);
