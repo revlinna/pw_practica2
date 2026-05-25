@@ -17,7 +17,6 @@
 
     /* Añadir las funciones que consideréis necesarias*/
 
-    ////CHECK FOR REDIRRECTION https://es.semrush.com/blog/javascript-redirect/  
 ///
 
 // ----- elementos recuperados del documento -----
@@ -52,7 +51,7 @@ function userLogIn() {
         console.log("Usuario loggueado con éxito.")
         //redirecciona el usuario a la página home tras el inicio de sessión
         window.location.href = "anime.html";
-    };
+    };//créditos por el modo de redirección a  Sean Collins https://es.semrush.com/blog/javascript-redirect/ 
 };
 buttonLogin.addEventListener("click", userLogIn);
 
@@ -79,3 +78,5 @@ function redirectToRegister() {
     window.location.href = "registro.html";
 }
 buttonNewUser.addEventListener("click", redirectToRegister);
+
+
