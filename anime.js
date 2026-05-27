@@ -10,7 +10,8 @@ let allAnime      = [];   // Todos los anime cargados (objetos Anime)
 let filteredAnime = [];   // Anime tras aplicar los filtros activos
 let displayedCount = 0;   // Cuántos se muestran actualmente
 let allGenres     = [];   // Lista completa de géneros [{id, name}]
-let selectedGenres = new Set(); // IDs de géneros seleccionados
+let relevantGenres = new Set(); // IDs de géneros relevantes
+let selectedGenres = new Set(); //IDs de géneros seleccionados
 //let currentUser;          // Objeto User del usuario logueado --------declarado en js 'menu'
 
 const filterGenres = document.getElementById("genreFilters");
@@ -118,7 +119,6 @@ async function loadGenres() {
     const response = await fetchWithRateLimit(`${API_BASE}/genres/anime`);
     //guarda las dadas recibidas en cache
     localStorage.setItem("storedGenres", JSON.stringify(response.data));
-
     return response.data;
 }
 
@@ -163,17 +163,15 @@ async function loadAnimeList() {
                 rank: apiObject.rank
             })
         });
-
         fetchedAnimes.push(...mappedObjects);
     }
     localStorage.setItem("storedAnimes", JSON.stringify(fetchedAnimes));
-
     return fetchedAnimes;
 }
 
 
 /* =====================================================
-   Funciones para contrl de la Caché (localStorage)
+   Funciones para control de la Caché (localStorage)
 ===================================================== */
 
 //...
@@ -211,15 +209,57 @@ function buildGenreFilters() {
             buttonGenre.className = "genre-btn";
             buttonGenre.textContent = genreFromAllGenres.name;
             //añade el ID del género al set de géneros relevantes 
-            selectedGenres.add(genreFromAllGenres.mal_id);  //remove .mal_id to save objetos en el Set
+            relevantGenres.add(genreFromAllGenres.mal_id);  //remove .mal_id to save objetos en el Set
             filterGenres.appendChild(buttonGenre);
         };
     });
 }
 
-console.log(selectedGenres); //just for me (remove later)
+console.log(relevantGenres); //just for me (remove later)
+
+//activa/desactiva los filtros. gestiona los generos seleccionados en cada momento
+function activateFilter(event) {
+    //validación por si el usuario clica el contenedor, pero no un botón exacto
+    if (!event.target.classList.contains("genre-btn")) {
+        return
+    };
+
+    const clickedGenre = event.target;
+    //cambia el estado activado/desactivado del botón de género
+    clickedGenre.classList.toggle("active");
+    //vacía el set de géneros seleccionados para una lectura limpia
+    selectedGenres.clear();
+    const allClickedGenres = filterGenres.querySelectorAll(".genre-btn.active"); //créditos a James Allardice por el modo de selección de múltiples clases https://stackoverflow.com/a/13672822 
+    allClickedGenres.forEach(genreButton => {
+        //busca el objeto de género por u nombre
+        const foundGenre = allGenres.find(g => g.name === genreButton.textContent);
+        if (foundGenre) {
+            //añade el género al set de seleccionados
+            selectedGenres.add(foundGenre.mal_id);
+        }
+    });
+    console.log("selected genres:" + selectedGenres.size);//DELETE LATERRRRRRR
+    applyFiltersAndRender();
+}
+filterGenres.addEventListener("click", activateFilter);
 
 
+
+//solo carga animes de generos del array pasado como parámetro;
+function applyFiltersAndRender() {
+    sectionAnime.textContent = "";
+    //restablece la lista si no hay filtros por género aplicados
+    if (selectedGenres.size === 0) {
+        allAnime.forEach(addAnimeCard);
+    } else {
+    //vacía el contenedor de tarjetas de anime (sustitución del bucle tradicional con .remove() sobre cada elemento)
+    //créditos a un usuario no identificado de DEV https://dev.to/javascript_jeep/how-to-empty-the-dom-element-in-javascript-nf8 
+     filteredAnime = allAnime.filter(currentAnime => {
+
+     })
+     filteredAnime.forEach(addAnimeCard);
+    }
+};
 
 /* =====================================================
    Tarjetas de Anime
@@ -228,12 +268,15 @@ console.log(selectedGenres); //just for me (remove later)
 /** Crea el elemento HTML de una tarjeta de anime */
 function addAnimeCard(anime) {
    const animeCard = document.createElement("article");
+   animeCard.classList.add("anime-art");
    const animeCover = document.createElement("img");
-   animeCover.src = anime.image_url; 
-   animeCard.textContent = anime.title;
+   const animeTitle = document.createElement("h4");
+   animeCover.src = anime.image_url;
+   animeCover.alt = anime.title;
+   animeTitle.textContent = anime.title;
    animeCard.appendChild(animeCover);
+   animeCard.appendChild(animeTitle);
    sectionAnime.appendChild(animeCard);
-
 }
 
 //...
