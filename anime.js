@@ -11,9 +11,15 @@ let filteredAnime = [];   // Anime tras aplicar los filtros activos
 let displayedCount = 0;   // Cuántos se muestran actualmente
 let allGenres     = [];   // Lista completa de géneros [{id, name}]
 let relevantGenres = new Set(); // IDs de géneros relevantes
-let selectedGenres = new Set(); //IDs de géneros seleccionados
+let selectedGenres = new Set(); // IDs de géneros seleccionados
+
+let selectedType = "";  // tipo seleccionado
+let selectedStatus = ""; // estado seleccionado
+let inputtedMinScore = null; // puntuación mínima introducida
+//IDs de géneros seleccionados
 //let currentUser;          // Objeto User del usuario logueado --------declarado en js 'menu'
 
+// ----- elementos del DOM recuperados -----
 const filterGenres = document.getElementById("genreFilters");
 const selectType = document.getElementById("typeFilter");
 //selectType.addEventListener("change", )
@@ -218,7 +224,7 @@ function buildGenreFilters() {
 console.log(relevantGenres); //just for me (remove later)
 
 //activa/desactiva los filtros. gestiona los generos seleccionados en cada momento
-function activateFilter(event) {
+function activateGenreButton(event) {
     //validación por si el usuario clica el contenedor, pero no un botón exacto
     if (!event.target.classList.contains("genre-btn")) {
         return
@@ -241,25 +247,83 @@ function activateFilter(event) {
     console.log("selected genres:" + selectedGenres.size);//DELETE LATERRRRRRR
     applyFiltersAndRender();
 }
-filterGenres.addEventListener("click", activateFilter);
+filterGenres.addEventListener("click", activateGenreButton);
+
+//gestiona el tipo de animes seleccionado en cada momento
+function changeTypeSelection (event) {
+    if (event.target.value === "") {
+        selectedType = "";
+    } else {
+        selectedType = event.target.value;
+    }
+    applyFiltersAndRender();
+}
+selectType.addEventListener("change", changeTypeSelection);
+
+//gestiona el estado de animes seleccionado
+function changeStatusSelection (event) {
+    if (event.target.value === "") {
+        selectedStatus = "";
+    }
+    //traduce el valor del input al nombre de estado proporcionado por API (originalmente en inglés)
+    if (event.target.value === "complete") {
+        selectedStatus = "Finished Airing";
+    }
+    if (event.target.value === "airing") {
+        selectedStatus = "Currently Airing";
+    }
+    if (event.target.value === "upcoming") {
+        selectedStatus = "Not yet aired";
+    }
+    applyFiltersAndRender();
+}
+selectStatus.addEventListener("change", changeStatusSelection);
 
 
-
-//solo carga animes de generos del array pasado como parámetro;
 function applyFiltersAndRender() {
-    sectionAnime.textContent = "";
-    //restablece la lista si no hay filtros por género aplicados
-    if (selectedGenres.size === 0) {
+    //vacía el contenedor de tarjetas de anime (sustitución del bucle tradicional con .remove() sobre cada elemento)
+    sectionAnime.textContent = ""; //créditos a un usuario no identificado de DEV https://dev.to/javascript_jeep/how-to-empty-the-dom-element-in-javascript-nf8 
+    //restablece la lista si no hay ningún filtro aplicado
+    if (selectedGenres.size === 0 && selectType === "") {
         allAnime.forEach(addAnimeCard);
     } else {
-    //vacía el contenedor de tarjetas de anime (sustitución del bucle tradicional con .remove() sobre cada elemento)
-    //créditos a un usuario no identificado de DEV https://dev.to/javascript_jeep/how-to-empty-the-dom-element-in-javascript-nf8 
-     filteredAnime = allAnime.filter(currentAnime => {
+      //filtra el listado de allAnime por géneros, tipo, estado y puntuación
+      filteredAnime = allAnime.filter(currentAnime => {
+        //inicia el contador de coincidencias encontradas
+        let matchesCounter = 0;
+        if (currentAnime.genres) {
+            //itera por cada genero del anime
+            for (let genre of currentAnime.genres) {
+                //si el ID del genero está en la lista de generos seleccionados, suma 1 al contador
+                if (selectedGenres.has(genre.mal_id)){
+                    matchesCounter++;
+                }
+            }
+        }
+        //devuelve false si el anime no reúne todos los géneros escogidos
+        if (selectedGenres.size > 0 && matchesCounter !== selectedGenres.size) {
+            return false;
+        }
+        //devuelve false si no tiene el tipo seleccionado
+        if (selectedType !== "" && currentAnime.type !== selectedType) {
+            return false;
+        }
+        //devuelve false si no tiene el estado seleccionado
+        if (selectedStatus !== "" && currentAnime.status !== selectedStatus) {
+            return false;
+        }
 
+        return true;
      })
+     //crea una tarjeta para cada anime de la lista filtrada
      filteredAnime.forEach(addAnimeCard);
     }
 };
+
+function clearAllFilters () {
+    
+}
+buttonClear.addEventListener("click", clearAllFilters);
 
 /* =====================================================
    Tarjetas de Anime
