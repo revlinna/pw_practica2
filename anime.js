@@ -16,19 +16,27 @@ let selectedGenres = new Set(); // IDs de géneros seleccionados
 let selectedType = "";  // tipo seleccionado
 let selectedStatus = ""; // estado seleccionado
 let inputtedMinScore = null; // puntuación mínima introducida
+let currentSort = "popularity";
 //IDs de géneros seleccionados
 //let currentUser;          // Objeto User del usuario logueado --------declarado en js 'menu'
 
 // ----- elementos del DOM recuperados -----
 const filterGenres = document.getElementById("genreFilters");
 const selectType = document.getElementById("typeFilter");
-//selectType.addEventListener("change", )
 const selectStatus = document.getElementById("statusFilter");
 const inputMinScore = document.getElementById("minScoreFilter");
 const buttonClear = document.getElementById("clearFiltersBtn");
 const sectionAnime = document.getElementById("animeContainer");
+const resultCounter = document.getElementById("resultCount");
+const divSort = document.getElementById("sortOrder");
 
-/* Añadir las funciones que consideréis necesarias*/
+// ----- event listeners ------
+if (filterGenres) {filterGenres.addEventListener("click", activateGenreButton);}
+if (selectType) {selectType.addEventListener("change", changeTypeSelection);}
+if (selectStatus) {selectStatus.addEventListener("change", changeStatusSelection);}
+if (divSort) {divSort.addEventListener("click", changeSortOrder);}
+if (inputMinScore) {inputMinScore.addEventListener("change", changeMinScoreValue);}
+if (buttonClear) {buttonClear.addEventListener("click", clearAllFilters);}
 
 /* =====================================================
    Inicialización
@@ -39,7 +47,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     ///--verificación se realiza a través del js de 'menu'
 
     // Cargar usuario actual
-    
 
     showLoader(true);
 
@@ -50,6 +57,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         allAnime = await loadAnimeList();
         console.log(allAnime);
         console.log(allAnime[0]);
+        //si el contenedor para ánime no existe, no deja cargar las tarjetas (previene el error 'cannot read properties of null' en listas.html, enlazado con este documento para el intercambio de funciones)
+        if (!sectionAnime) {
+            console.log("Contenedor no existe.")
+            return;
+        }
         allAnime.forEach(addAnimeCard);
 
     } catch (err) {
@@ -83,7 +95,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 /* =====================================================
    Carga de datos (API + caché localStorage)
 ===================================================== */
-
 /**
  * Pausa la ejecución N milisegundos (para respetar rate limits).
  */
@@ -139,7 +150,10 @@ async function loadAnimeList() {
     const cachedAnimes = localStorage.getItem("storedAnimes");
     //comprueba si exiten animes recuperados y los devuelve desde localStorage
     if (cachedAnimes) {
-        return JSON.parse(cachedAnimes);
+        const parsedAnimes = JSON.parse(cachedAnimes);
+        return parsedAnimes.map(planeObj => new Anime(planeObj));
+        //return JSON.parse(cachedAnimes);
+
     }
 
     let fetchedAnimes = [];
@@ -180,8 +194,62 @@ async function loadAnimeList() {
    Funciones para control de la Caché (localStorage)
 ===================================================== */
 
-//...
-//...
+//guarda los filtros aplicados en localStorage
+function saveFilters() {
+    //crea un objeto con los últimos valores de filtros
+    const latestFilters = {
+        genres: Array.from(selectedGenres), //créditos a Oriol por el modo de hacer un set stringificable https://stackoverflow.com/a/31190928
+        type: selectedType,
+        status: selectedStatus,
+        minScore: inputtedMinScore
+    };
+    localStorage.setItem("latestAnimeFilters", JSON.stringify(latestFilters));
+}
+
+//recupera los últimos filtros aplicados del localStorage
+function restoreFilters() {
+    const filtersFromStorage = localStorage.getItem("latestAnimeFilters");
+    //detiene si no hay filtros guardados
+    if (!filtersFromStorage) {
+        return;
+    }
+    const savedFilters = JSON.parse(filtersFromStorage);
+    //asigna los valores recuperados a las variables de filtros
+    selectedGenres = new Set(savedFilters.genres);
+    selectedType = savedFilters.type;
+    selectedStatus = savedFilters.status;
+    inputtedMinScore = savedFilters.minScore;
+    //recupera el aspecto de botones 'género' activos
+    if (selectedGenres) {
+        const allGenresButtons = filterGenres.querySelectorAll(".genre-btn");
+        allGenresButtons.forEach(genreButton => {
+            //busca el objeto género por su nombre
+            const foundGenre = allGenres.find(gnr => gnr.name === genreButton.textContent);
+            //si lo encuentra y su ID estaba en el set de géneros seleccionados, imita click sobre su botón
+            if (foundGenre && savedFilters.genres.includes(foundGenre.mal_id)) {
+                genreButton.click();
+            }
+        });
+    };
+    //recupera el tipo escogido en el selector
+    if (selectType) {selectType.value = selectedType};
+    //recupera el estado escogido en el selector
+    if (selectStatus) {
+        if (selectedStatus === "") {
+            selectStatus.value = "";
+        }
+        //traduce el nombre de estado poporcionado por API a valor de input equivalente en anime.html
+        if (selectedStatus === "Finished Airing") {
+            selectStatus.value = "complete";
+        }
+        if (selectedStatus === "Currently Airing") {
+            selectStatus.value = "airing";
+        }
+        if (selectedStatus === "Not yet aired") {
+            selectStatus.value = "upcoming";
+        }
+    }
+}
 /* Añadir las funciones que consideréis necesarias*/
 
 /* =====================================================
@@ -235,10 +303,11 @@ function activateGenreButton(event) {
     clickedGenre.classList.toggle("active");
     //vacía el set de géneros seleccionados para una lectura limpia
     selectedGenres.clear();
+    //selecciona los géneros activados
     const allClickedGenres = filterGenres.querySelectorAll(".genre-btn.active"); //créditos a James Allardice por el modo de selección de múltiples clases https://stackoverflow.com/a/13672822 
     allClickedGenres.forEach(genreButton => {
         //busca el objeto de género por u nombre
-        const foundGenre = allGenres.find(g => g.name === genreButton.textContent);
+        const foundGenre = allGenres.find(gnr => gnr.name === genreButton.textContent);
         if (foundGenre) {
             //añade el género al set de seleccionados
             selectedGenres.add(foundGenre.mal_id);
@@ -247,7 +316,7 @@ function activateGenreButton(event) {
     console.log("selected genres:" + selectedGenres.size);//DELETE LATERRRRRRR
     applyFiltersAndRender();
 }
-filterGenres.addEventListener("click", activateGenreButton);
+
 
 //gestiona el tipo de animes seleccionado en cada momento
 function changeTypeSelection (event) {
@@ -258,7 +327,7 @@ function changeTypeSelection (event) {
     }
     applyFiltersAndRender();
 }
-selectType.addEventListener("change", changeTypeSelection);
+
 
 //gestiona el estado de animes seleccionado
 function changeStatusSelection (event) {
@@ -277,14 +346,44 @@ function changeStatusSelection (event) {
     }
     applyFiltersAndRender();
 }
-selectStatus.addEventListener("change", changeStatusSelection);
+
+
+//gestiona la puntuación mínima introducida
+function changeMinScoreValue (event) {
+    if (event.target.value === "") {
+        inputtedMinScore = null;
+    } else {
+        inputtedMinScore = event.target.value;
+    }
+    applyFiltersAndRender();
+}
+
+
+//cambia el criterio de ordenación
+function changeSortOrder (event) {
+    const clickedButton = event.target;
+    if (!clickedButton.hasAttribute("data-sort")) {
+        return;
+    }
+    const activeOrder = divSort.querySelector(".btn-sort.active");
+    if (activeOrder) {
+        activeOrder.classList.remove("active");
+    }
+    clickedButton.classList.add("active");
+    currentSort = clickedButton.dataset.sort; // créditos a Josh Crozier por el modo de leer el valor de atributo 'data' https://stackoverflow.com/a/33760558 
+    applyFiltersAndRender();
+}
 
 
 function applyFiltersAndRender() {
     //vacía el contenedor de tarjetas de anime (sustitución del bucle tradicional con .remove() sobre cada elemento)
     sectionAnime.textContent = ""; //créditos a un usuario no identificado de DEV https://dev.to/javascript_jeep/how-to-empty-the-dom-element-in-javascript-nf8 
+    //vacía el contador de resultados encontrados
+    resultCounter.textContent = "";
     //restablece la lista si no hay ningún filtro aplicado
-    if (selectedGenres.size === 0 && selectType === "") {
+    if (selectedGenres.size === 0 && selectedType === "" && selectedStatus === "" && inputtedMinScore === null) {
+        //ordena la lista según el criterio activo
+        allAnime = sortAnimes(allAnime);
         allAnime.forEach(addAnimeCard);
     } else {
       //filtra el listado de allAnime por géneros, tipo, estado y puntuación
@@ -300,7 +399,7 @@ function applyFiltersAndRender() {
                 }
             }
         }
-        //devuelve false si el anime no reúne todos los géneros escogidos
+        //devuelve false si el anime no reúne todos los géneros seleccionados
         if (selectedGenres.size > 0 && matchesCounter !== selectedGenres.size) {
             return false;
         }
@@ -312,18 +411,38 @@ function applyFiltersAndRender() {
         if (selectedStatus !== "" && currentAnime.status !== selectedStatus) {
             return false;
         }
-
+        //devuelve false si no alcanza la puntuación indicada
+        if (inputtedMinScore !== "" && currentAnime.score < inputtedMinScore){
+            return false;
+        }
         return true;
      })
+     //ordena la lista según el criterio activo
+     filteredAnime = sortAnimes(filteredAnime);
      //crea una tarjeta para cada anime de la lista filtrada
      filteredAnime.forEach(addAnimeCard);
+     //crea un contador de resultados encontrados
+     const count = document.createElement("p");
+     count.textContent = "Resultados encontrados: " + filteredAnime.length;
+     resultCounter.appendChild(count);
     }
+    saveFilters();
 };
 
 function clearAllFilters () {
-    
+    const activeGenreButtons = filterGenres.querySelectorAll(".active");
+    activeGenreButtons.forEach(button => button.classList.remove("active"));
+    selectedGenres.clear();
+    selectType.value = "";
+    selectedType = "";
+    selectStatus.value = "";
+    selectedStatus = "";
+    inputMinScore.value = "";
+    inputtedMinScore = null;
+    applyFiltersAndRender();
+    localStorage.removeItem("latestAnimeFilters");
 }
-buttonClear.addEventListener("click", clearAllFilters);
+
 
 /* =====================================================
    Tarjetas de Anime
@@ -333,15 +452,97 @@ buttonClear.addEventListener("click", clearAllFilters);
 function addAnimeCard(anime) {
    const animeCard = document.createElement("article");
    animeCard.classList.add("anime-art");
+   animeCard.dataset.anid = anime.id;
+   //crea la portada
    const animeCover = document.createElement("img");
-   const animeTitle = document.createElement("h4");
    animeCover.src = anime.image_url;
    animeCover.alt = anime.title;
-   animeTitle.textContent = anime.title;
+   animeCover.addEventListener("click", () => {
+    idToSessionStorage(anime.id);
+    window.location.href = "detail.html";
+   })
    animeCard.appendChild(animeCover);
+   //crea el título
+   const animeTitle = document.createElement("h4");
+   animeTitle.textContent = anime.title;
+   animeTitle.addEventListener("click", () => {
+    idToSessionStorage(anime.id);
+    window.location.href = "detail.html";
+   })
    animeCard.appendChild(animeTitle);
-   sectionAnime.appendChild(animeCard);
+   //indica la popularidad
+   const animeScore = document.createElement("p");   
+   animeScore.textContent = anime.score;
+   animeCard.appendChild(animeScore);
+   //indica los géneros
+   for (let genre of anime.genres) {
+    const animeGenre = document.createElement("p");
+    animeGenre.classList.add("genre-tag");
+    animeGenre.textContent = genre.name;
+    animeCard.appendChild(animeGenre);
+   }
+   //indica el estado
+   const animeStatus = document.createElement("p");
+   animeStatus.classList.add("status-tag");
+   animeStatus.textContent = anime.status;
+   animeCard.appendChild(animeStatus);
+
+   //crea el botón 'viendo actualmente'
+   const watchingButton = document.createElement("button");
+   watchingButton.classList.add("add-to-list-btn", "forNow");
+   watchingButton.textContent = "Viendo";
+   //si el anime existe en la lista 'watching' del usuario, activa el boton correspondiente
+   if (activeUser && activeUser.watching && activeUser.watching.hasAnime(anime.id)) {
+    watchingButton.classList.add("active");
+   }
+   animeCard.appendChild(watchingButton);
+   watchingButton.addEventListener("click", (event) => {
+    //pasa a la función el evento junto con el objeto anime
+    //función definida en documento 'listas'
+    add_remove_UserLists(event, anime);
+   })
+
+   //crea el botón 'ver más tarde'
+   const planButton = document.createElement("button");
+   planButton.classList.add("add-to-list-btn", "forLater");
+   planButton.textContent = "Plan";
+   //si el anime existe en la lista 'plan to watch' del usuario, activa el boton correspondiente
+   if (activeUser && activeUser.planToWatch && activeUser.planToWatch.hasAnime(anime.id)){
+    planButton.classList.add("active");
+   }
+   animeCard.appendChild(planButton);
+   planButton.addEventListener("click", (event) => {
+    add_remove_UserLists(event, anime);
+   })
+   //comprueba la existencia de contenedor especifico antes de agregar la tarjeta dentro
+   //contenedor existente en anime.html
+   if (sectionAnime) {sectionAnime.appendChild(animeCard);}
+   //contenedor existente en listas.html
+   if (divContainer) {divContainer.appendChild(animeCard);}
 }
+/* =====================================================
+   ordenado
+===================================================== */
+function sortAnimes(arr) {
+    if (arr.length === 0){
+        return [];
+    } else {
+        const sortedList = [...arr];
+        if (currentSort === "popularity") {
+            sortedList.sort((a,b) => a.popularity - b.popularity);
+        }  else if (currentSort === "titleAsc") {
+            sortedList.sort((a,b) => a.title.localeCompare(b.title));// créditos a Dillion Megida por comparación alfabética de strings https://www.freecodecamp.org/news/javascript-string-comparison-how-to-compare-strings-in-js/
+        } else if (currentSort === "titleDesc") {
+            sortedList.sort((a,b) => b.title.localeCompare(a.title));
+        } else if (currentSort === "scoreDesc") {
+            sortedList.sort((a,b) => b.score - a.score);
+        } else if (currentSort === "scoreAsc") {
+            sortedList.sort((a,b) => a.score - b.score);
+        }
+        return sortedList;
+    }
+}
+
 
 //...
 //...
