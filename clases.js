@@ -48,7 +48,7 @@ class Anime {
             throw new Error("El título no puede estar vacío y debe ser una cadena de texto.")
         }
         this._title = newTitle.trim();
-    } //setter hecho a partir de la propuesta de solución para PR1
+    } //setter(s) hecho(s) a partir de la propuesta de solución para PR1, créditos a Kepa Sarasola
 
     get titleJapanese() {return this._titleJapanese;}
     set titleJapanese(newTitleJapanese) {
@@ -104,6 +104,10 @@ class Anime {
 
     get score() {return this._score;}
     set score(newScore) {
+      if (newScore === null || newScore === undefined) {
+        this._score = 0;
+        return;
+      }
       if (typeof newScore !== "number"){
         throw new Error("La puntuación debe ser un número.")
       }
@@ -177,8 +181,13 @@ class AnimeList {
   #list;
   #name;
   #maxItems;
-    constructor({name, maxItems}){ //entre las llaves para poder pasar un objeto entero al fromJSON y no arguementos sueltos
-      this.#list = [];
+    constructor({name, maxItems, list}){ //entre las llaves para poder pasar un objeto entero al fromJSON y no arguementos sueltos
+      //si se proporciona una lista de animes, los instancia como objetos Anime 
+      if (Array.isArray(list)) {
+        this.#list = list.map(anime => (anime instanceof Anime ? anime : new Anime(anime)));
+      } else {
+        this.#list = [];
+      }
       this.#name = name;
       this.#maxItems = maxItems;
     }
@@ -202,18 +211,25 @@ class AnimeList {
   }
   
 //añade un objeto Anime a la lista
-    addAnime(anime) {
-      if (anime instanceof Anime){
+  addAnime(anime) {
+    if (anime instanceof Anime){
+        //comprueba si anime ya existe en la lista
         if (!this.#list.includes(anime)){
-        this.#list = [...this.#list, anime];
-        console.log(`El anime ${anime.title} fue correctamente añadido a la lista de animes.`);
-      } else {
-        console.log(`El anime ${anime.title} ya existe en la lista.`);
-      }
+          //comprueba si no se excede la capacidad máxima de la lista
+          if (typeof this.#maxItems === "number" && this.#maxItems !== Infinity && this.#list.length >= this.#maxItems) {
+            window.alert(`La lista ${this.#name} no puede exceder el límite de ${this.#maxItems} elementos.`)
+            return;
+          }
+
+            this.#list = [...this.#list, anime];
+            console.log(`El anime ${anime.title} fue correctamente añadido a la lista de animes.`);
+          } else {
+            console.log(`El anime ${anime.title} ya existe en la lista.`);
+          }
     } else {
       throw new Error("El parámetro no pertenece a la clase Anime");
     }
-    }
+  }
 //elimina un objeto Anime de la lista
     removeAnime(animeId) {
       if (typeof animeId === "number" ) {
@@ -228,6 +244,18 @@ class AnimeList {
         }
       } else {
         throw  new Error("El ID debe ser un número.")
+      }
+    }
+
+    hasAnime(animeId) {
+      if (typeof animeId === "number") {
+        const idFound = this.#list.find((currentAnime) => currentAnime.id === animeId);
+        if (idFound) {
+          console.log(`El anime con ese ID existe en la lista ${this.name}.`)
+          return true;
+        } else {
+          return false;
+        }
       }
     }
 //muestra info básica sobre cada Anime guardado en la lista
@@ -299,11 +327,11 @@ class User {
     #email;
     #username;
     #password;
-    #watching = [];     // AnimeList — máx. 10
-    #planToWatch = [];  // AnimeList — sin límite
+    #watching = {};     // AnimeList — máx. 10
+    #planToWatch = {};  // AnimeList — sin límite
 
     /*Constructor de la clase User */
-  constructor({name, surname, address, city, postalCode, email, username, password}) {
+  constructor({name, surname, address, city, postalCode, email, username, password, watching, planToWatch}) {
     this.name = name;
     this.surname = surname;
     this.address = address;
@@ -312,6 +340,9 @@ class User {
     this.email = email;
     this.username = username;
     this.password = password;
+    //recupera la lista guardada en localStorage como objeto AnimeList o crea un nuevo objeto AnimeList
+    this.#watching = watching ? new AnimeList(watching) : new AnimeList({name: "Viendo actualmente", maxItems: 10});
+    this.#planToWatch = planToWatch ? new AnimeList(planToWatch) : new AnimeList({name: "Plan to Watch", maxItems: Infinity});
   }
 
   get name() {return this.#name;}
@@ -381,6 +412,8 @@ class User {
     this.#password = newPassword.trim();
   } // créditos por regex a UI Bakery https://uibakery.io/regex-library/password 
 
+  get watching() {return this.#watching};
+  get planToWatch() {return this.#planToWatch};
 
     /** Guarda el usuario en localStorage (nuevo usuario) */
   save() {
@@ -391,7 +424,10 @@ class User {
 
     /** Actualiza los datos del usuario en localStorage */
   update() {
-
+    const storageObj = this.#toStorageObject();
+    const userAsJSON = JSON.stringify(storageObj);
+    localStorage.setItem(this.username, userAsJSON);
+    localStorage.setItem("currentUser", userAsJSON);
   }
 
     /** Objeto plano serializable para localStorage */
@@ -404,9 +440,13 @@ class User {
       postalCode: this.postalCode,
       email: this.email,
       username: this.username,
-      password: this.password
+      password: this.password,
+      watching: this.watching,
+      planToWatch: this.planToWatch
     };
   }
+  //para acceder al objeto serializable desde fuera
+  get toStorageObject() {return this.#toStorageObject;}
 
     /** Carga un usuario desde localStorage dado su nombre de usuario */
   static loadFromStorage(username) {
