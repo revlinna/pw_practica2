@@ -8,28 +8,41 @@
  * Actualiza el menú con los datos del usuario actual:
  * nombre de usuario y contadores de listas.
  */
-function updateMenu() {
-    //...
-}
+
+const buttonProfile = document.getElementById("menuButton");
+const counterWatching = document.querySelector(".watching-count");
+const counterPlan = document.querySelector(".plan-count");
 
 
-
-
-
+//objeto User activo. resaturado desde localStorage
+let activeUser = null;
 // recupera el usuario actualmente loggueado
 let loggedUser = localStorage.getItem("currentUser");
-//DEACTIVATED WHILE I TEST THE ANIME LIST STUFF
+
+document.addEventListener("DOMContentLoaded", updateMenu);
+
 //si no hay usuario loggueado, redirige a la página de login
-//if (!loggedUser){
-//    console.log("Usuario no loggueado.");
-//    window.location.href = "index.html";
-//}
+if (!loggedUser){
+    console.log("Usuario no loggueado.");
+    window.location.href = "index.html";
+} else {
+    const userData = JSON.parse(loggedUser);
+    activeUser = new User(userData);
+    updateMenu();
+}
+
+function updateMenu() {
+    buttonProfile.textContent = activeUser.username;
+    counterWatching.textContent = activeUser.watching.list.length;
+    counterPlan.textContent = activeUser.planToWatch.list.length;
+}
 
 //////just me checking stuff
 const loggedUserObj = JSON.parse(loggedUser);
 console.log(loggedUser);
 console.log(loggedUserObj);
 console.log(localStorage.getItem(loggedUserObj.name));
+console.log(activeUser);
 
 
 
@@ -53,6 +66,17 @@ itemDropDown.forEach(dropDownElem => {
     dropDownElem.addEventListener("click", revealDropDown);
 });
 
+function createDialogBox(string) {
+    const dialogBox = document.createElement("dialog");
+    dialogBox.classList.add("user-msg");
+    dialogBox.textContent = string;
+    document.body.appendChild(dialogBox);
+    dialogBox.show();
+    setTimeout(() => {
+        dialogBox.close();
+        dialogBox.remove();
+    }, 4000);
+}
 /**
  * Cierra la sesión del usuario y redirige al login.
  */
