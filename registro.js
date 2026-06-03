@@ -3,8 +3,6 @@
  * (sin validaciones HTML5 nativas)
  */
 
-/* Añadir las funciones que consideréis necesarias*/
-
 // --- elementos recuperados del documento ---
 const inputName = document.getElementById("name");
 const inputSurname = document.getElementById("surname");
@@ -18,7 +16,14 @@ const inputPassword2 = document.getElementById("password2");
 const buttonSave = document.getElementById("saveButton");
 const buttonBack = document.getElementById("backToLoginButton");
 
-
+// ----- event listeners -----
+selectCity.addEventListener("change", autoSelectCP);
+inputEmail.addEventListener("input", autoCompleteEmail);
+inputCP.addEventListener("input", autoCompleteCity);
+inputUsername.addEventListener("blur", existentUsername);
+inputPassword2.addEventListener("blur", matchingPasswords);
+buttonSave.addEventListener("click", checkInputs);
+buttonBack.addEventListener("click", redirrectToIndex);
 
 // ----- relleno de las opciones del desplegable -población- -----
 for (obj of cities) {
@@ -36,7 +41,6 @@ function autoSelectCP(event) {
         inputCP.value = cpByCity.postalCode; 
     }
 }
-selectCity.addEventListener("change", autoSelectCP);
 
 // ----- autocompleta la población tras la selección de CP -----
 function autoCompleteCity(event) {
@@ -48,8 +52,6 @@ function autoCompleteCity(event) {
         }
     }
 }
-inputCP.addEventListener("input", autoCompleteCity);
-
 
 // ---- autocompleta el email -----
 function autoCompleteEmail(event) {
@@ -58,7 +60,6 @@ function autoCompleteEmail(event) {
         document.getElementById("email").value = `${targetInput}uoc.edu`;        
     }
 }
-inputEmail.addEventListener("input", autoCompleteEmail);
 
 // ----- comprueba la existencia de nombre de usuario -----
 function existentUsername(event) {
@@ -68,7 +69,6 @@ function existentUsername(event) {
        inputUsername.placeholder = "Nombre ya existente. Pon nombre de usuario único."
     }
 }
-inputUsername.addEventListener("blur", existentUsername);
 
 // ----- comprueba la contraseña repetida -----
 function matchingPasswords(event) {
@@ -78,7 +78,6 @@ function matchingPasswords(event) {
         inputPassword2.placeholder = "Contraseñas no coinciden. Introdúce de nuevo.";
     }
 }
-inputPassword2.addEventListener("blur", matchingPasswords);
 
 // ----- validación de campos rellenados y conservación -----
 function checkInputs() {
@@ -104,7 +103,7 @@ function checkInputs() {
             postalCode: inputCP.value.trim(),
             email: inputEmail.value.trim(),
             username: inputUsername.value.trim(),
-            password: inputPassword.value 
+            password: inputPassword.value,
         })
         user.save();
         window.alert("Usuario guardado con éxito.");
@@ -121,10 +120,8 @@ function checkInputs() {
         console.log(error.message);
     }
 }
-buttonSave.addEventListener("click", checkInputs);
 
 // ----- volver a la página login -----
 function redirrectToIndex() {
     window.location.href = "index.html";
 }
-buttonBack.addEventListener("click", redirrectToIndex);
