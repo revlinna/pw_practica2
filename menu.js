@@ -4,23 +4,26 @@
  * Se incluye en todas las páginas autenticadas.
  */
 
-/**
- * Actualiza el menú con los datos del usuario actual:
- * nombre de usuario y contadores de listas.
- */
-
-const buttonProfile = document.getElementById("menuButton");
-const counterWatching = document.querySelector(".watching-count");
-const counterPlan = document.querySelector(".plan-count");
-
-
 //objeto User activo. resaturado desde localStorage
 let activeUser = null;
 // recupera el usuario actualmente loggueado
 let loggedUser = localStorage.getItem("currentUser");
 
-document.addEventListener("DOMContentLoaded", updateMenu);
+// ----- elementos del DOM restaurados -----
+const buttonProfile = document.getElementById("menuButton");
+const counterWatching = document.querySelector(".watching-count");
+const counterPlan = document.querySelector(".plan-count");
+const itemDropDown = document.querySelectorAll(".dropdown");
+const buttonLogout = document.getElementById("logoutButton");
 
+// ----- event listeners -----
+buttonLogout.addEventListener("click", logout);
+document.addEventListener("DOMContentLoaded", updateMenu);
+itemDropDown.forEach(dropDownElem => {
+    dropDownElem.addEventListener("click", revealDropDown);
+});
+
+// ----- inicialización -----
 //si no hay usuario loggueado, redirige a la página de login
 if (!loggedUser){
     console.log("Usuario no loggueado.");
@@ -31,30 +34,15 @@ if (!loggedUser){
     updateMenu();
 }
 
+// ----- funciones -----
+//----- actualiza el menu con dadas del usuario -----
 function updateMenu() {
     buttonProfile.textContent = activeUser.username;
     counterWatching.textContent = activeUser.watching.list.length;
     counterPlan.textContent = activeUser.planToWatch.list.length;
 }
 
-//////just me checking stuff
-const loggedUserObj = JSON.parse(loggedUser);
-console.log(loggedUser);
-console.log(loggedUserObj);
-console.log(localStorage.getItem(loggedUserObj.name));
-console.log(activeUser);
-
-
-
-
-
-
-
-
-const itemDropDown = document.querySelectorAll(".dropdown");
-const buttonLogout = document.getElementById("logoutButton");
-
-//despliega los dropdowns
+// ----- despliega los dropdowns ----- 
 function revealDropDown(event) {
     const dropDownContent = event.currentTarget.querySelector(".dropdown-content");
     if (dropDownContent) {
@@ -62,10 +50,7 @@ function revealDropDown(event) {
     }
 }// créditos a Bale por el uso de currentTarget https://medium.com/@bloodturtle/difference-between-event-target-and-event-currenttarget-0d229cc7f9eb
 
-itemDropDown.forEach(dropDownElem => {
-    dropDownElem.addEventListener("click", revealDropDown);
-});
-
+// ----- crea un diálogo de comunicación al usuario sobre el estado del sistema ----- 
 function createDialogBox(string) {
     const dialogBox = document.createElement("dialog");
     dialogBox.classList.add("user-msg");
@@ -77,12 +62,9 @@ function createDialogBox(string) {
         dialogBox.remove();
     }, 4000);
 }
-/**
- * Cierra la sesión del usuario y redirige al login.
- */
+
+// ----- Cierra la sesión del usuario y redirige al login.
 function logout() {
     localStorage.removeItem("currentUser");
     window.location.href = "index.html";
-
 }
-buttonLogout.addEventListener("click", logout);
