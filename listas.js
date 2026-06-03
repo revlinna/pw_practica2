@@ -2,7 +2,6 @@
  * listas.js — Gestión de las listas del usuario (Viendo actualmente / Plan to Watch)
  */
 
-//let currentUser;
 let activeListKey = 'watching'; // Lista activa por defecto
 
 // ----- elementos recuperados ------
@@ -14,8 +13,10 @@ const divContainer = document.getElementById("listContainer");
 const h2ListTitle = document.getElementById("listTitle");
 
 // ----- event listeners -----
-buttonWatching.addEventListener("click", cardsForUserList);
-buttonPlan.addEventListener("click", cardsForUserList);
+if (buttonWatching) {buttonWatching.addEventListener("click", cardsForUserList);}
+if (buttonPlan) {buttonPlan.addEventListener("click", cardsForUserList);}
+
+// ----- inicialización -----
 document.addEventListener("DOMContentLoaded", () => {
     const rute = document.location.href;
     if (rute.includes("watching")){
@@ -133,8 +134,3 @@ function updateLocalCounter() {
         counterP2.textContent = activeUser.planToWatch.list.length;
     }
 }
-
-/**
- * Eliminar un anime de la lista activa y actualiza la vista.
- */
-
