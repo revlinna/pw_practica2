@@ -3,9 +3,6 @@
  * Gestiona la carga desde la API/caché, filtros, paginación y listas.
  */
 
-/* =====================================================
-   Estado de la aplicación
-===================================================== */
 let allAnime      = [];   // Todos los anime cargados (objetos Anime)
 let filteredAnime = [];   // Anime tras aplicar los filtros activos
 let displayedCount = 0;   // Cuántos se muestran actualmente
@@ -13,12 +10,11 @@ let allGenres     = [];   // Lista completa de géneros [{id, name}]
 let relevantGenres = new Set(); // IDs de géneros relevantes
 let selectedGenres = new Set(); // IDs de géneros seleccionados
 
+// ----- variables actualizables por acciones del usuario
 let selectedType = "";  // tipo seleccionado
 let selectedStatus = ""; // estado seleccionado
 let inputtedMinScore = null; // puntuación mínima introducida
-let currentSort = "popularity";
-//IDs de géneros seleccionados
-//let currentUser;          // Objeto User del usuario logueado --------declarado en js 'menu'
+let currentSort = "popularity"; //tipo de ordenación
 
 // ----- elementos del DOM recuperados -----
 const filterGenres = document.getElementById("genreFilters");
@@ -43,10 +39,7 @@ if (buttonClear) {buttonClear.addEventListener("click", clearAllFilters);}
 ===================================================== */
 document.addEventListener('DOMContentLoaded', async function () {
 
-    // Verificar autenticación
-    ///--verificación se realiza a través del js de 'menu'
-
-    // Cargar usuario actual
+    //la vereificación del usuario loggueado se realiza mediante menu.js
 
     showLoader(true);
 
@@ -57,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         allAnime = await loadAnimeList();
         console.log(allAnime);
         console.log(allAnime[0]);
-        //si el contenedor para ánime no existe, no deja cargar las tarjetas (previene el error 'cannot read properties of null' en listas.html, enlazado con este documento para el intercambio de funciones)
+        //si el contenedor para ánime no existe, no deja cargar las tarjetas (previene el error 'cannot read properties of null' en listas.html, enlazado con este documento para el intercambio de funciones y variables)
         if (!sectionAnime) {
             console.log("Contenedor no existe.")
             return;
@@ -71,25 +64,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     showLoader(false);
-
     // Construir filtros de género
     buildGenreFilters();
-
     // Restaurar filtros si se viene del detalle
-    restoreFilters();//maybe add IF or OR for when the user comes from detail page so its either this funcion or the defalt that creates cards for every anime in allAnime
-    
-
+    restoreFilters();
     // Aplicar filtros y renderizar
-    applyFiltersAndRender();
-
-    // Eventos de los controles de filtro
-
-
-    // Eventos de los botones de ordenamiento
-
-
-    // Botón "Cargar más"
-    
+    applyFiltersAndRender();    
 });
 
 /* =====================================================
@@ -141,21 +121,19 @@ async function loadGenres() {
 
 
 /**
- * Carga la lista de anime desde caché o API (4 páginas × 25 = 100 anime).
+ * Carga la lista de anime desde caché o API (8 páginas × 25 = 200 anime).
  * @returns {Array<Anime>} Lista de objetos Anime
  */
 async function loadAnimeList() {
-    // Usar caché si es válida
     //recupera los anime del cache
     const cachedAnimes = localStorage.getItem("storedAnimes");
     //comprueba si exiten animes recuperados y los devuelve desde localStorage
     if (cachedAnimes) {
         const parsedAnimes = JSON.parse(cachedAnimes);
+        //convierte objetos anime planos en objetos de clase Anime 
         return parsedAnimes.map(planeObj => new Anime(planeObj));
-        //return JSON.parse(cachedAnimes);
-
     }
-
+    //si no hubo animes a restaurar de cache, abre array para recibir animes de API
     let fetchedAnimes = [];
 
     for (let page = 1; page <= PAGES_TO_FETCH; page++) {
@@ -163,28 +141,31 @@ async function loadAnimeList() {
 
         await delay(API_DELAY_MS);
         let response = await fetchWithRateLimit(url);
-        //desestructuración para adaptar los datos estructurados con estructura própia de la API a la clase Anime local
+        //desestructuración para adaptar los datos con estructura própia de la API a la clase Anime local
         const mappedObjects = response.data.map(apiObject => {
             return new Anime({
                 mal_id: apiObject.mal_id,
                 //la API guarda en la propiedad 'título' de sus objetos el título japonés romanizado,
                 //por eso aquí se ha hecho ese ~intercambio~
                 title: apiObject.title_english || apiObject.title, //OR para los anime que no tienen título inglés definido
-                titleJapanese: apiObject.title || "Sin título.", 
+                titleJapanese: apiObject.title_japanese || "Sin título.", 
                 synopsis: apiObject.synopsis,
                 image_url: apiObject.images.jpg.image_url,
                 type: apiObject.type,
+                //añade valor de repuesto en caso de propiedad sin valor definido
                 episodes: apiObject.episodes || 0,
                 status:apiObject.status,
                 score: apiObject.score,
                 genres: apiObject.genres,
+                studios: apiObject.studios,
                 aired: apiObject.aired,
-                popularity: apiObject.popularity,
-                rank: apiObject.rank
+                popularity: apiObject.popularity || 0,
+                rank: apiObject.rank || 0
             })
         });
         fetchedAnimes.push(...mappedObjects);
     }
+    //guarda los animes recibidos en localStorage para recuperarlos sin llamar a la API la próxima vez
     localStorage.setItem("storedAnimes", JSON.stringify(fetchedAnimes));
     return fetchedAnimes;
 }
@@ -194,11 +175,11 @@ async function loadAnimeList() {
    Funciones para control de la Caché (localStorage)
 ===================================================== */
 
-//guarda los filtros aplicados en localStorage
+// ----- guarda los filtros aplicados en localStorage ----- 
 function saveFilters() {
     //crea un objeto con los últimos valores de filtros
     const latestFilters = {
-        genres: Array.from(selectedGenres), //créditos a Oriol por el modo de hacer un set stringificable https://stackoverflow.com/a/31190928
+        genres: Array.from(selectedGenres), //créditos a Oriol por el modo de hacer el set stringificable https://stackoverflow.com/a/31190928
         type: selectedType,
         status: selectedStatus,
         minScore: inputtedMinScore
@@ -206,7 +187,7 @@ function saveFilters() {
     localStorage.setItem("latestAnimeFilters", JSON.stringify(latestFilters));
 }
 
-//recupera los últimos filtros aplicados del localStorage
+// ----- recupera los últimos filtros aplicados del localStorage ----- 
 function restoreFilters() {
     const filtersFromStorage = localStorage.getItem("latestAnimeFilters");
     //detiene si no hay filtros guardados
@@ -250,15 +231,12 @@ function restoreFilters() {
         }
     }
 }
-/* Añadir las funciones que consideréis necesarias*/
 
 /* =====================================================
    Filtros
 ===================================================== */
 
-/* Añadir las funciones que consideréis necesarias*/
-
-//define los géneros relevantes para la colección de anime
+// ----- define los géneros relevantes para la colección de anime ----- 
 function buildGenreFilters() {
     //guarda IDs únicos de lo géneros. sirve para evitar duplicado de géneros
     let genresIDs = [];
@@ -283,15 +261,15 @@ function buildGenreFilters() {
             buttonGenre.className = "genre-btn";
             buttonGenre.textContent = genreFromAllGenres.name;
             //añade el ID del género al set de géneros relevantes 
-            relevantGenres.add(genreFromAllGenres.mal_id);  //remove .mal_id to save objetos en el Set
+            relevantGenres.add(genreFromAllGenres.mal_id);
             filterGenres.appendChild(buttonGenre);
         };
     });
 }
 
-console.log(relevantGenres); //just for me (remove later)
+console.log(relevantGenres);
 
-//activa/desactiva los filtros. gestiona los generos seleccionados en cada momento
+// ----- activa/desactiva los filtros. gestiona los generos seleccionados en cada momento ----- 
 function activateGenreButton(event) {
     //validación por si el usuario clica el contenedor, pero no un botón exacto
     if (!event.target.classList.contains("genre-btn")) {
@@ -313,12 +291,10 @@ function activateGenreButton(event) {
             selectedGenres.add(foundGenre.mal_id);
         }
     });
-    console.log("selected genres:" + selectedGenres.size);//DELETE LATERRRRRRR
     applyFiltersAndRender();
 }
 
-
-//gestiona el tipo de animes seleccionado en cada momento
+// ----- gestiona el tipo de animes seleccionado en cada momento ----- 
 function changeTypeSelection (event) {
     if (event.target.value === "") {
         selectedType = "";
@@ -328,8 +304,7 @@ function changeTypeSelection (event) {
     applyFiltersAndRender();
 }
 
-
-//gestiona el estado de animes seleccionado
+// ----- gestiona el estado de animes seleccionado ----- 
 function changeStatusSelection (event) {
     if (event.target.value === "") {
         selectedStatus = "";
@@ -347,8 +322,7 @@ function changeStatusSelection (event) {
     applyFiltersAndRender();
 }
 
-
-//gestiona la puntuación mínima introducida
+// ----- gestiona la puntuación mínima introducida ----- 
 function changeMinScoreValue (event) {
     if (event.target.value === "") {
         inputtedMinScore = null;
@@ -358,8 +332,7 @@ function changeMinScoreValue (event) {
     applyFiltersAndRender();
 }
 
-
-//cambia el criterio de ordenación
+// ----- cambia el criterio de ordenación ----- 
 function changeSortOrder (event) {
     const clickedButton = event.target;
     if (!clickedButton.hasAttribute("data-sort")) {
@@ -374,7 +347,7 @@ function changeSortOrder (event) {
     applyFiltersAndRender();
 }
 
-
+// ----- aplica los filtros y carga la selección ----- 
 function applyFiltersAndRender() {
     //vacía el contenedor de tarjetas de anime (sustitución del bucle tradicional con .remove() sobre cada elemento)
     sectionAnime.textContent = ""; //créditos a un usuario no identificado de DEV https://dev.to/javascript_jeep/how-to-empty-the-dom-element-in-javascript-nf8 
@@ -429,6 +402,7 @@ function applyFiltersAndRender() {
     saveFilters();
 };
 
+// ----- vacía la selección de filtros ----- 
 function clearAllFilters () {
     const activeGenreButtons = filterGenres.querySelectorAll(".active");
     activeGenreButtons.forEach(button => button.classList.remove("active"));
@@ -458,7 +432,8 @@ function addAnimeCard(anime) {
    animeCover.src = anime.image_url;
    animeCover.alt = anime.title;
    animeCover.addEventListener("click", () => {
-    idToSessionStorage(anime.id);
+    //guarda el ID en sessionStorage. la referencia se usa por details.js para cargar detalles del anime que provocó el evento
+    sessionStorage.setItem("storedID", anime.id);//anime.id sin stringify ya que es un número puro
     window.location.href = "detail.html";
    })
    animeCard.appendChild(animeCover);
@@ -466,7 +441,7 @@ function addAnimeCard(anime) {
    const animeTitle = document.createElement("h4");
    animeTitle.textContent = anime.title;
    animeTitle.addEventListener("click", () => {
-    idToSessionStorage(anime.id);
+    sessionStorage.setItem("storedID", (anime.id));
     window.location.href = "detail.html";
    })
    animeCard.appendChild(animeTitle);
@@ -474,19 +449,23 @@ function addAnimeCard(anime) {
    const animeScore = document.createElement("p");   
    animeScore.textContent = anime.score;
    animeCard.appendChild(animeScore);
-   //indica los géneros
-   for (let genre of anime.genres) {
-    const animeGenre = document.createElement("p");
-    animeGenre.classList.add("genre-tag");
-    animeGenre.textContent = genre.name;
-    animeCard.appendChild(animeGenre);
-   }
+
    //indica el estado
    const animeStatus = document.createElement("p");
    animeStatus.classList.add("status-tag");
    animeStatus.textContent = anime.status;
    animeCard.appendChild(animeStatus);
 
+   //indica los géneros
+   for (let genre of anime.genres) {
+    const genDiv = document.createElement("div");
+    genDiv.classList.add("ani-details-div");
+    const animeGenre = document.createElement("p");
+    animeGenre.classList.add("genre-tag");
+    animeGenre.textContent = genre.name;
+    genDiv.appendChild(animeGenre);
+    animeCard.appendChild(genDiv);
+   }
    //crea el botón 'viendo actualmente'
    const watchingButton = document.createElement("button");
    watchingButton.classList.add("add-to-list-btn", "forNow");
@@ -514,7 +493,7 @@ function addAnimeCard(anime) {
    planButton.addEventListener("click", (event) => {
     add_remove_UserLists(event, anime);
    })
-   //comprueba la existencia de contenedor especifico antes de agregar la tarjeta dentro
+   //se comprueba la existencia de contenedor especifico antes de agregar la tarjeta dentro.
    //contenedor existente en anime.html
    if (sectionAnime) {sectionAnime.appendChild(animeCard);}
    //contenedor existente en listas.html
@@ -523,6 +502,8 @@ function addAnimeCard(anime) {
 /* =====================================================
    ordenado
 ===================================================== */
+
+// ----- ordena los animes según el criterio actual ----- 
 function sortAnimes(arr) {
     if (arr.length === 0){
         return [];
@@ -543,17 +524,6 @@ function sortAnimes(arr) {
     }
 }
 
-
-//...
-//...
-/* Añadir las funciones que consideréis necesarias*/
-
-/* =====================================================
-   Gestión de listas
-===================================================== */
-
-/* Añadir las funciones que consideréis necesarias*/
-
 /* =====================================================
    Loader / spinner
 ===================================================== */
@@ -562,8 +532,3 @@ function showLoader(visible) {
     const loader = document.getElementById('loader');
     if (loader) loader.style.display = visible ? 'flex' : 'none';
 }
-
-
-/* Añadir las funciones que consideréis necesarias*/
-
-
