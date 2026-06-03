@@ -25,18 +25,18 @@ class Anime {
   
   constructor({mal_id, title, titleJapanese, synopsis, image_url, type, episodes, status, score, genres, studios, aired, popularity, rank}) {
         this.#mal_id = mal_id; 
-        this.title = title;
-        this.titleJapanese = titleJapanese;
-        this.synopsis = synopsis; 
-        this.image_url = image_url; 
-        this.episodes = episodes; 
-        this.type = type; 
-        this.status = status;
-        this.score = score;
-        this.genres = genres; 
-        this.studios = studios;
-        this.aired = aired;
-        this.popularity = popularity;
+        this.title = title;//
+        this.titleJapanese = titleJapanese;//
+        this.synopsis = synopsis; //
+        this.image_url = image_url; //
+        this.episodes = episodes; //
+        this.type = type; //
+        this.status = status;//
+        this.score = score;//
+        this.genres = genres; //
+        this.studios = studios;//
+        this.aired = aired;//
+        this.popularity = popularity;//
         this.rank = rank;
     }
     
@@ -137,7 +137,13 @@ class Anime {
     }
 
     get rank() {return this._rank;}
-    set rank(newRank) {this._rank = newRank;}
+    set rank(newRank) {
+      if (typeof newRank !== "number" || newRank < 0) {
+        console.warn("El ranking debe ser un número mayor que 0.")
+      } else {
+        this._rank = newRank;
+      }
+    }
 
 
     /** Serializa el anime a un objeto plano para localStorage */
@@ -168,8 +174,6 @@ class Anime {
        const dataFromJSON = JSON.parse(data);
        return new Anime(dataFromJSON);  
     }
-
-    /* Añadir las funciones que consideréis necesarias*/
 }
 
 
@@ -246,7 +250,7 @@ class AnimeList {
         throw  new Error("El ID debe ser un número.")
       }
     }
-
+//comprueba si hay un anime en la lista con ID especificado
     hasAnime(animeId) {
       if (typeof animeId === "number") {
         const idFound = this.#list.find((currentAnime) => currentAnime.id === animeId);
@@ -304,13 +308,12 @@ class AnimeList {
           maxItems: this.#maxItems
         }
     }
-
+//convierte un objeto serializado a un objeto de clase
     static fromJSON(data) {
       const dataFromJSON = JSON.parse(data);
        return new AnimeList(dataFromJSON);
     }
 
-    /* Añadir las funciones que consideréis necesarias*/
 }
 
 
@@ -458,8 +461,6 @@ class User {
       return new User(userFromJSON);
     }
   }
-
-    /* Añadir las funciones que consideréis necesarias*/
 }
 
 
