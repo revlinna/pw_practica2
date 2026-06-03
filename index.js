@@ -2,28 +2,18 @@
  * index.js — Lógica de la página de login
  */
 
-/*Este script debe de gestionar el login de los usuarios.*/
-
-/* Añadir las funciones que consideréis necesarias*/
-
-    // Si hay un usuario logeado, redirigimos a la página indice de Pokemons
-    //...
-
-    // Si no hay un usuario logeado, comprobamos datos de login
-    //...
-
-    // Al pulsar el boton redirigimos a la página de registro
-    //...
-
-    /* Añadir las funciones que consideréis necesarias*/
-
-///
+/*Este script gestiona el login de los usuarios.*/
 
 // ----- elementos recuperados del documento -----
 const inputUsername = document.getElementById("username");
 const inputPassword = document.getElementById("password");
 const buttonLogin = document.getElementById("loginButton");
 const buttonNewUser = document.getElementById("newUserButton");
+
+// ----- event listeners -----
+buttonLogin.addEventListener("click", userLogIn);
+document.addEventListener("DOMContentLoaded", checkLoggedUser);
+buttonNewUser.addEventListener("click", redirectToRegister);
 
 //guarda el usuario que tiene la sessión iniciada actualmente
 let loggedUser = null;
@@ -53,7 +43,6 @@ function userLogIn() {
         window.location.href = "anime.html";
     };//créditos por el modo de redirección a  Sean Collins https://es.semrush.com/blog/javascript-redirect/ 
 };
-buttonLogin.addEventListener("click", userLogIn);
 
 // ----- comprueba si hay usuario ya loggueado -----
 function checkLoggedUser() {
@@ -71,12 +60,12 @@ function checkLoggedUser() {
     }
 }
 //llama a la función de comprobar login ya activo tras cargar el DOM
-document.addEventListener("DOMContentLoaded", checkLoggedUser);
+
 
 // ----- redirige a la página de registro -----
 function redirectToRegister() {
     window.location.href = "registro.html";
 }
-buttonNewUser.addEventListener("click", redirectToRegister);
+
 
 
